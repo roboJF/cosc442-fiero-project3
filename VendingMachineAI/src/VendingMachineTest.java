@@ -52,16 +52,17 @@ class VendingMachineTest {
         assertNull(machine.getItem("C"));
     }
 
-    @Test
-    void addingToOccupiedSlotThrowsAndKeepsOriginalItem() {
+    @ParameterizedTest
+    @ValueSource(strings = { "A", "B", "C", "D" })
+    void addingToOccupiedSlotThrowsAndKeepsOriginalItem(String code) {
         VendingMachineItem original = new VendingMachineItem("Chips", 1.00);
-        machine.addItem(original, "B");
+        machine.addItem(original, code);
 
         VendingMachineException error = assertThrows(VendingMachineException.class,
-                () -> machine.addItem(new VendingMachineItem("Candy", 2.00), "B"));
+                () -> machine.addItem(new VendingMachineItem("Candy", 2.00), code));
 
-        assertEquals("Slot B already occupied", error.getMessage());
-        assertSame(original, machine.getItem("B"));
+        assertEquals("Slot " + code + " already occupied", error.getMessage());
+        assertSame(original, machine.getItem(code));
     }
 
     @ParameterizedTest
@@ -69,6 +70,9 @@ class VendingMachineTest {
     @ValueSource(strings = { "a", "E", "AA", " A", "A " })
     void invalidCodesAreRejectedByEverySlotOperation(String code) {
         VendingMachineItem item = new VendingMachineItem("Chips", 1.00);
+        machine.addItem(item, "A");
+        machine.insertMoney(2.00);
+
         assertEquals("Invalid code for vending machine item",
                 assertThrows(VendingMachineException.class, () -> machine.addItem(item, code)).getMessage());
         assertEquals("Invalid code for vending machine item",
@@ -77,8 +81,8 @@ class VendingMachineTest {
                 assertThrows(VendingMachineException.class, () -> machine.removeItem(code)).getMessage());
         assertEquals("Invalid code for vending machine item",
                 assertThrows(VendingMachineException.class, () -> machine.makePurchase(code)).getMessage());
-        assertNull(machine.getItem("A"));
-        assertEquals(0.0, machine.getBalance());
+        assertSame(item, machine.getItem("A"));
+        assertEquals(2.00, machine.getBalance());
     }
 
     @ParameterizedTest
@@ -92,13 +96,14 @@ class VendingMachineTest {
         assertEquals(0.0, machine.getBalance());
     }
 
-    @Test
-    void removingEmptySlotThrowsAndLeavesItEmpty() {
+    @ParameterizedTest
+    @ValueSource(strings = { "A", "B", "C", "D" })
+    void removingEmptySlotThrowsAndLeavesItEmpty(String code) {
         VendingMachineException error = assertThrows(VendingMachineException.class,
-                () -> machine.removeItem("C"));
+                () -> machine.removeItem(code));
 
-        assertEquals("Slot C is empty -- cannot remove item", error.getMessage());
-        assertNull(machine.getItem("C"));
+        assertEquals("Slot " + code + " is empty -- cannot remove item", error.getMessage());
+        assertNull(machine.getItem(code));
     }
 
     @Test
@@ -129,8 +134,15 @@ class VendingMachineTest {
         assertEquals(1.00, machine.getBalance());
     }
 
+    @Test
+    void smallestPositiveDepositIsAccepted() {
+        machine.insertMoney(Double.MIN_VALUE);
+
+        assertEquals(Double.MIN_VALUE, machine.getBalance());
+    }
+
     @ParameterizedTest
-    @ValueSource(doubles = { -1.0, -0.01, -0.000001 })
+    @ValueSource(doubles = { -1.0, -0.01, -0.000001, -Double.MIN_VALUE })
     void negativeDepositThrowsAndPreservesBalance(double amount) {
         machine.insertMoney(2.00);
 
@@ -170,6 +182,46 @@ class VendingMachineTest {
         assertFalse(machine.makePurchase("B"));
         assertSame(item, machine.getItem("B"));
         assertEquals(1.49, machine.getBalance(), 0.000001);
+    }
+
+    @Test
+    void purchaseJustBelowPriceFailsAndCanSucceedAfterAnotherDeposit() {
+        VendingMachineItem item = new VendingMachineItem("Water", 1.00);
+        machine.addItem(item, "A");
+        double justBelowPrice = Math.nextDown(1.00);
+        machine.insertMoney(justBelowPrice);
+
+        assertFalse(machine.makePurchase("A"));
+        assertSame(item, machine.getItem("A"));
+        assertEquals(justBelowPrice, machine.getBalance());
+
+        machine.insertMoney(Math.ulp(1.00));
+        assertTrue(machine.makePurchase("A"));
+        assertNull(machine.getItem("A"));
+        assertEquals(0.00, machine.getBalance());
+    }
+
+    @Test
+    void buyingOneOfFourItemsDoesNotAffectOtherSlots() {
+        VendingMachineItem[] items = {
+                new VendingMachineItem("A", 0.50),
+                new VendingMachineItem("B", 0.75),
+                new VendingMachineItem("C", 1.00),
+                new VendingMachineItem("D", 1.25)
+        };
+        String[] codes = { "A", "B", "C", "D" };
+        for (int i = 0; i < codes.length; i++) {
+            machine.addItem(items[i], codes[i]);
+        }
+        machine.insertMoney(2.00);
+
+        assertTrue(machine.makePurchase("B"));
+
+        assertSame(items[0], machine.getItem("A"));
+        assertNull(machine.getItem("B"));
+        assertSame(items[2], machine.getItem("C"));
+        assertSame(items[3], machine.getItem("D"));
+        assertEquals(1.25, machine.getBalance(), 0.000001);
     }
 
     @Test
@@ -219,6 +271,16 @@ class VendingMachineTest {
         assertEquals(2.50, machine.returnChange());
         assertEquals(0.00, machine.getBalance());
         assertEquals(0.00, machine.returnChange());
+    }
+
+    @Test
+    void returnChangeAfterPurchaseReturnsOnlyTheRemainder() {
+        machine.addItem(new VendingMachineItem("Chips", 1.25), "A");
+        machine.insertMoney(2.00);
+        assertTrue(machine.makePurchase("A"));
+
+        assertEquals(0.75, machine.returnChange(), 0.000001);
+        assertEquals(0.00, machine.getBalance());
     }
 
     @Test

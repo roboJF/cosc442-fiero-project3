@@ -24,11 +24,11 @@ class VendingMachineItemTest {
 
     @Test
     void smallPositivePriceIsAccepted() {
-        assertEquals(0.000001, new VendingMachineItem("Sample", 0.000001).getPrice());
+        assertEquals(Double.MIN_VALUE, new VendingMachineItem("Sample", Double.MIN_VALUE).getPrice());
     }
 
     @ParameterizedTest
-    @ValueSource(doubles = { -1.00, -0.01, -0.000001 })
+    @ValueSource(doubles = { -1.00, -0.01, -0.000001, -Double.MIN_VALUE })
     void negativePriceThrows(double price) {
         VendingMachineException error = assertThrows(VendingMachineException.class,
                 () -> new VendingMachineItem("Chips", price));
