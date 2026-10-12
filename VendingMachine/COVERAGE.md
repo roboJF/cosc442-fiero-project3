@@ -13,5 +13,5 @@ My injected fault caused a significant number of tests to fail, for the fault, i
 - testMakePurchaseInsufficient()
 - testMakePurchaseExact()
 - testMakePurchaseEmpty
-- testReturnChange()
+- testReturnChange()  
 The reason all of these tests failed was since they needed to insert money at some point, and the new condition made that basically impossible to do without an exception being thrown.
