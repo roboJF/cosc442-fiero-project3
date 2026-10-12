@@ -1,6 +1,7 @@
 Overall, I would say the generated tests were really good!  
 GPT did a really good job with generating thorough and sufficient test cases, to the point where I was shocked with how in-depth some of the tests were.  
 With that being said, as a result of this, many of the tests it generated were overly redundant and basically just checked for the same thing over and over again using slightly different values.  
+The redundancy was especially visible in the second go-around, since my original batch of test cases had 100% coverage, the second prompt caused even more tests along these lines to be produced.  
 I think for both generated suites, they were probably better than my test cases, I think the first suite it generated was either on par or slightly better, and the second suite was definitely better.  
 The first suite generated was shockingly similar to the test cases I wrote myself, and while I wouldn't say they were the exact same, they were very similar.  
 I wouldn't say that the second prompt really improved anything, but it did make the tests more thorough, as an example, it added one test (purchaseJustBelowPriceFailsAndCanSucceedAfterAnotherDeposit()) that has a failed purchase due to an insufficient balance, but then adds more money to be able to buy the item, which is a test I probably would've never came up with on my own.  
