@@ -11,12 +11,14 @@ public class VendingMachineExceptionTest {
     
     //-------------------- VendingMachineException --------------------
 
+    // Verifies that the no-argument constructor creates a non-null exception.
     @Test 
     void testVendingMachineException() {
         VendingMachineException ex = new VendingMachineException();
         assertNotNull(ex);
     }
 
+    // Verifies that the exception preserves the supplied message.
     @Test
     void testVendingMachineExceptionMessage(){
         String message = "You feel as if something truly terrible has happened...";
@@ -25,6 +27,7 @@ public class VendingMachineExceptionTest {
         assertEquals(message, ex.getMessage());
     }
 
+    // Verifies that an empty message is accepted and returned unchanged.
     @Test
     void testVendingMachineExceptionEmpty(){
         //You feel as if nothing has happened...

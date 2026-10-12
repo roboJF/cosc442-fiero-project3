@@ -14,11 +14,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 class VendingMachineTest {
     private VendingMachine machine;
 
+    // Gives each test a fresh machine so its result does not depend on other tests.
     @BeforeEach
     void setUp() {
         machine = new VendingMachine();
     }
 
+    // Checks the initial balance and confirms all four slots start empty.
     @Test
     void newMachineHasFourEmptySlotsAndNoBalance() {
         assertEquals(4, VendingMachine.NUM_SLOTS);
@@ -28,6 +30,7 @@ class VendingMachineTest {
         assertEquals(0.0, machine.getBalance());
     }
 
+    // Checks that each valid slot stores and returns the exact item added to it.
     @ParameterizedTest
     @ValueSource(strings = { "A", "B", "C", "D" })
     void addAndGetItemInEverySlot(String code) {
@@ -39,6 +42,7 @@ class VendingMachineTest {
         assertEquals(0.0, machine.getBalance());
     }
 
+    // Checks that stocking one slot does not fill or change another slot.
     @Test
     void slotsAreIndependent() {
         VendingMachineItem first = new VendingMachineItem("Chips", 1.00);
@@ -52,6 +56,7 @@ class VendingMachineTest {
         assertNull(machine.getItem("C"));
     }
 
+    // Checks that every occupied slot rejects a second item without replacing the first.
     @ParameterizedTest
     @ValueSource(strings = { "A", "B", "C", "D" })
     void addingToOccupiedSlotThrowsAndKeepsOriginalItem(String code) {
@@ -65,6 +70,8 @@ class VendingMachineTest {
         assertSame(original, machine.getItem(code));
     }
 
+    // Checks that null, empty, and malformed codes fail for every slot operation
+    // without changing an existing item or the balance.
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = { "a", "E", "AA", " A", "A " })
@@ -85,6 +92,7 @@ class VendingMachineTest {
         assertEquals(2.00, machine.getBalance());
     }
 
+    // Checks that removing an item returns that same object and empties its slot.
     @ParameterizedTest
     @ValueSource(strings = { "A", "B", "C", "D" })
     void removeReturnsItemAndEmptiesSlot(String code) {
@@ -96,6 +104,7 @@ class VendingMachineTest {
         assertEquals(0.0, machine.getBalance());
     }
 
+    // Checks that removing from any empty slot reports the correct error.
     @ParameterizedTest
     @ValueSource(strings = { "A", "B", "C", "D" })
     void removingEmptySlotThrowsAndLeavesItEmpty(String code) {
@@ -106,6 +115,7 @@ class VendingMachineTest {
         assertNull(machine.getItem(code));
     }
 
+    // Checks that a slot can accept a new item after its previous item is removed.
     @Test
     void removedSlotCanBeRestocked() {
         machine.addItem(new VendingMachineItem("Old", 1.00), "A");
@@ -117,6 +127,7 @@ class VendingMachineTest {
         assertSame(replacement, machine.getItem("A"));
     }
 
+    // Checks that deposits add together and reading the balance does not consume it.
     @Test
     void insertingMoneyAccumulatesAndReadingBalanceDoesNotChangeIt() {
         machine.insertMoney(1.25);
@@ -126,6 +137,7 @@ class VendingMachineTest {
         assertEquals(2.00, machine.getBalance(), 0.000001);
     }
 
+    // Checks that a zero deposit is allowed and leaves the balance unchanged.
     @Test
     void insertingZeroDoesNotChangeBalance() {
         machine.insertMoney(1.00);
@@ -134,6 +146,7 @@ class VendingMachineTest {
         assertEquals(1.00, machine.getBalance());
     }
 
+    // Checks the smallest representable positive deposit is accepted.
     @Test
     void smallestPositiveDepositIsAccepted() {
         machine.insertMoney(Double.MIN_VALUE);
@@ -141,6 +154,8 @@ class VendingMachineTest {
         assertEquals(Double.MIN_VALUE, machine.getBalance());
     }
 
+    // Checks negative deposits, including the value nearest zero, are rejected
+    // without changing money already inserted.
     @ParameterizedTest
     @ValueSource(doubles = { -1.0, -0.01, -0.000001, -Double.MIN_VALUE })
     void negativeDepositThrowsAndPreservesBalance(double amount) {
@@ -153,6 +168,7 @@ class VendingMachineTest {
         assertEquals(2.00, machine.getBalance());
     }
 
+    // Checks an item can be bought for its exact price, leaving no item or balance.
     @Test
     void exactBalancePurchasesAndRemovesItem() {
         machine.addItem(new VendingMachineItem("Chips", 1.50), "A");
@@ -163,6 +179,7 @@ class VendingMachineTest {
         assertEquals(0.00, machine.getBalance());
     }
 
+    // Checks a purchase succeeds with extra money and leaves the correct balance.
     @Test
     void purchaseWithExtraMoneyLeavesCorrectChange() {
         machine.addItem(new VendingMachineItem("Water", 1.25), "D");
@@ -173,6 +190,7 @@ class VendingMachineTest {
         assertNull(machine.getItem("D"));
     }
 
+    // Checks insufficient money leaves both the item and deposited money intact.
     @Test
     void insufficientBalanceLeavesItemAndMoneyUntouched() {
         VendingMachineItem item = new VendingMachineItem("Chips", 1.50);
@@ -184,6 +202,8 @@ class VendingMachineTest {
         assertEquals(1.49, machine.getBalance(), 0.000001);
     }
 
+    // Checks the floating-point value just below the price fails, then succeeds
+    // after enough additional money is inserted.
     @Test
     void purchaseJustBelowPriceFailsAndCanSucceedAfterAnotherDeposit() {
         VendingMachineItem item = new VendingMachineItem("Water", 1.00);
@@ -201,6 +221,7 @@ class VendingMachineTest {
         assertEquals(0.00, machine.getBalance());
     }
 
+    // Checks buying one item from a full machine leaves the other three untouched.
     @Test
     void buyingOneOfFourItemsDoesNotAffectOtherSlots() {
         VendingMachineItem[] items = {
@@ -224,6 +245,7 @@ class VendingMachineTest {
         assertEquals(1.25, machine.getBalance(), 0.000001);
     }
 
+    // Checks selecting an empty slot fails without consuming the balance.
     @Test
     void emptySlotCannotBePurchased() {
         machine.insertMoney(3.00);
@@ -232,6 +254,7 @@ class VendingMachineTest {
         assertEquals(3.00, machine.getBalance());
     }
 
+    // Checks a zero-price item can be purchased with an empty balance.
     @Test
     void freeItemCanBePurchasedWithoutMoney() {
         machine.addItem(new VendingMachineItem("Sample", 0.00), "C");
@@ -241,6 +264,7 @@ class VendingMachineTest {
         assertEquals(0.00, machine.getBalance());
     }
 
+    // Checks a purchased item cannot be bought again while its slot is empty.
     @Test
     void successfulPurchaseCannotBeRepeatedUntilRestocked() {
         machine.addItem(new VendingMachineItem("Candy", 0.50), "B");
@@ -251,6 +275,7 @@ class VendingMachineTest {
         assertEquals(0.50, machine.getBalance(), 0.000001);
     }
 
+    // Checks two purchases use the remaining balance from the first purchase.
     @Test
     void sequentialPurchasesUseRemainingBalance() {
         machine.addItem(new VendingMachineItem("Chips", 1.25), "A");
@@ -264,6 +289,7 @@ class VendingMachineTest {
         assertNull(machine.getItem("D"));
     }
 
+    // Checks returning change pays the full balance and resets it to zero.
     @Test
     void returnChangePaysBalanceAndResetsIt() {
         machine.insertMoney(2.50);
@@ -273,6 +299,7 @@ class VendingMachineTest {
         assertEquals(0.00, machine.returnChange());
     }
 
+    // Checks change after a purchase contains only the unspent money.
     @Test
     void returnChangeAfterPurchaseReturnsOnlyTheRemainder() {
         machine.addItem(new VendingMachineItem("Chips", 1.25), "A");
@@ -283,6 +310,7 @@ class VendingMachineTest {
         assertEquals(0.00, machine.getBalance());
     }
 
+    // Checks returning change does not remove stocked items or make them free.
     @Test
     void returningChangeDoesNotRemoveItems() {
         VendingMachineItem item = new VendingMachineItem("Water", 1.00);
